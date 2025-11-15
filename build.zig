@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.root_module.link_libc = true;
-    exe.root_module.linkSystemLibrary("sdl3", .{ .preferred_link_mode = .static });
+    exe.root_module.linkSystemLibrary("sdl3", .{});
 
     b.installArtifact(exe);
 

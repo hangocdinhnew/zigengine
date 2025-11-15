@@ -94,11 +94,7 @@ pub fn build(b: *std.Build) void {
         exe.root_module.linkFramework("Metal", .{});
     }
     exe.root_module.addLibraryPath(b.path("zig-out/sdl-build"));
-    if (builtin.os.tag == .windows) {
-        exe.root_module.linkSystemLibrary("SDL3", .{});
-    } else {
-        exe.root_module.linkSystemLibrary("sdl3", .{});
-    }
+    exe.root_module.linkSystemLibrary("sdl3", .{});
 
     sdl3mod.addIncludePath(b.path("external/SDL/include"));
 

@@ -5,6 +5,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const sdl_windows = b.dependency("sdl_windows", .{});
+
     // const mod = b.addModule("core", .{
     //     .root_source_file = b.path("core/root.zig"),
     //     .target = target,
@@ -16,7 +18,7 @@ pub fn build(b: *std.Build) void {
     });
 
     if (builtin.os.tag == .windows)
-        sdl3mod.addIncludePath(b.path("external/SDL-headers/"));
+        sdl3mod.addIncludePath(sdl_windows.path("include/"));
 
     const exe = b.addExecutable(.{
         .name = "sandbox",
@@ -63,7 +65,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (builtin.os.tag == .windows)
-        exe.root_module.addLibraryPath(b.path("external/SDL/"));
+        exe.root_module.addLibraryPath(sdl_windows.path("lib/x64/"));
     exe.root_module.linkSystemLibrary("sdl3", .{ .preferred_link_mode = .static });
 
     b.installArtifact(exe);

@@ -10,43 +10,13 @@ pub fn build(b: *std.Build) void {
     //     .target = target,
     // });
 
-    var cmake_build: *std.Build.Step.Run = undefined;
-
-    if (optimize == .Debug) {
-        cmake_build = b.addSystemCommand(&.{
-            "cmake",
-            "-S",
-            "external/SDL",
-            "-B",
-            "zig-out/sdl-build",
-            "-DCMAKE_BUILD_TYPE=Debug",
-            "-DSDL_SHARED=OFF",
-            "-DSDL_STATIC=ON",
-        });
-    } else {
-        cmake_build = b.addSystemCommand(&.{
-            "cmake",
-            "-S",
-            "external/SDL",
-            "-B",
-            "zig-out/sdl-build",
-            "-DCMAKE_BUILD_TYPE=Release",
-            "-DSDL_SHARED=OFF",
-            "-DSDL_STATIC=ON",
-        });
-    }
-
-    const cmake_compile = b.addSystemCommand(&.{
-        "cmake",
-        "--build",
-        "zig-out/sdl-build",
-    });
-    cmake_compile.step.dependOn(&cmake_build.step);
-
     const sdl3mod = b.addModule("sdl3", .{
         .root_source_file = b.path("lib/sdl3.zig"),
         .target = target,
     });
+
+    if (builtin.os.tag == .windows)
+        sdl3mod.addIncludePath(b.path("external/SDL-headers/"));
 
     const exe = b.addExecutable(.{
         .name = "sandbox",
@@ -61,8 +31,6 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.root_module.link_libc = true;
-
-    exe.step.dependOn(&cmake_compile.step);
 
     if (builtin.os.tag == .macos) {
         exe.root_module.linkFramework("Cocoa", .{});
@@ -93,10 +61,10 @@ pub fn build(b: *std.Build) void {
         exe.root_module.linkFramework("QuartzCore", .{});
         exe.root_module.linkFramework("Metal", .{});
     }
-    exe.root_module.addLibraryPath(b.path("zig-out/sdl-build"));
-    exe.root_module.linkSystemLibrary("sdl3", .{});
 
-    sdl3mod.addIncludePath(b.path("external/SDL/include"));
+    if (builtin.os.tag == .windows)
+        exe.root_module.addLibraryPath(b.path("external/SDL/"));
+    exe.root_module.linkSystemLibrary("sdl3", .{ .preferred_link_mode = .static });
 
     b.installArtifact(exe);
 

@@ -1,6 +1,7 @@
 const cSDL3 = @cImport({
     @cInclude("SDL3/SDL.h");
 });
+const std = @import("std");
 
 // Value Aliases
 pub const EventAudioDeviceAdded = cSDL3.SDL_EVENT_AUDIO_DEVICE_ADDED;
@@ -95,31 +96,167 @@ pub const WFNotFocusable = cSDL3.SDL_WINDOW_NOT_FOCUSABLE;
 pub const Window = cSDL3.SDL_Window;
 pub const Event = cSDL3.SDL_Event;
 
+pub const GPUDevice = cSDL3.SDL_GPUDevice;
+pub const GPUCommandBuffer = cSDL3.SDL_GPUCommandBuffer;
+pub const GPUTexture = cSDL3.SDL_GPUTexture;
+
 // Function Alias
+pub const GetError = cSDL3.SDL_GetError;
+
 pub const PollEvent = cSDL3.SDL_PollEvent;
 
 pub const DestroyWindow = cSDL3.SDL_DestroyWindow;
+
+pub const ClaimWindowForGPUDevice = cSDL3.SDL_ClaimWindowForGPUDevice;
+pub const AcquireGPUCommandBuffer = cSDL3.SDL_AcquireGPUCommandBuffer;
+pub const ReleaseWindowFromGPUDevice = cSDL3.SDL_ReleaseWindowFromGPUDevice;
+pub const SubmitGPUCommandBuffer = cSDL3.SDL_SubmitGPUCommandBuffer;
+pub const DestroyGPUDevice = cSDL3.SDL_DestroyGPUDevice;
+
 pub const Quit = cSDL3.SDL_Quit;
 
+// Helper functions (PRIVATE)
+fn upperAll(comptime s: []const u8) []const u8 {
+    comptime {
+        var buf: [s.len]u8 = undefined;
+        for (s, 0..) |ch, i| {
+            buf[i] = std.ascii.toUpper(ch);
+        }
+        return buf[0..];
+    }
+}
+
 // Enums
-pub const InitFlags = enum(u32) {
-    Audio = cSDL3.SDL_INIT_AUDIO,
-    Video = cSDL3.SDL_INIT_VIDEO,
-    Joystick = cSDL3.SDL_INIT_JOYSTICK,
-    Haptic = cSDL3.SDL_INIT_HAPTIC,
-    Gamepad = cSDL3.SDL_INIT_GAMEPAD,
-    Events = cSDL3.SDL_INIT_EVENTS,
-    Sensor = cSDL3.SDL_INIT_SENSOR,
-    Camera = cSDL3.SDL_INIT_CAMERA,
+pub const InitFlags = struct {
+    Audio: bool = false,
+    Video: bool = false,
+    Joystick: bool = false,
+    Haptic: bool = false,
+    Gamepad: bool = false,
+    Events: bool = false,
+    Sensor: bool = false,
+    Camera: bool = false,
+
+    pub fn toSDLFlags(self: InitFlags) u32 {
+        var bits: u32 = 0;
+
+        inline for (@typeInfo(@This()).@"struct".fields) |field| {
+            if (@field(self, field.name)) {
+                const flag = @field(cSDL3, "SDL_INIT_" ++ upperAll(field.name));
+                bits |= flag;
+            }
+        }
+
+        return bits;
+    }
+};
+
+const WindowFlagsInternal = struct {
+    pub const SDL_WINDOW_FULLSCREEN: u64 = cSDL3.SDL_WINDOW_FULLSCREEN;
+    pub const SDL_WINDOW_OPENGL: u64 = cSDL3.SDL_WINDOW_OPENGL;
+    pub const SDL_WINDOW_OCCLUDED: u64 = cSDL3.SDL_WINDOW_OCCLUDED;
+    pub const SDL_WINDOW_HIDDEN: u64 = cSDL3.SDL_WINDOW_HIDDEN;
+    pub const SDL_WINDOW_BORDERLESS: u64 = cSDL3.SDL_WINDOW_BORDERLESS;
+    pub const SDL_WINDOW_RESIZABLE: u64 = cSDL3.SDL_WINDOW_RESIZABLE;
+    pub const SDL_WINDOW_MINIMIZED: u64 = cSDL3.SDL_WINDOW_MINIMIZED;
+    pub const SDL_WINDOW_MAXIMIZED: u64 = cSDL3.SDL_WINDOW_MAXIMIZED;
+    pub const SDL_WINDOW_MOUSEGRABBED: u64 = cSDL3.SDL_WINDOW_MOUSE_GRABBED;
+    pub const SDL_WINDOW_INPUTFOCUS: u64 = cSDL3.SDL_WINDOW_INPUT_FOCUS;
+    pub const SDL_WINDOW_MOUSEFOCUS: u64 = cSDL3.SDL_WINDOW_MOUSE_FOCUS;
+    pub const SDL_WINDOW_EXTERNAL: u64 = cSDL3.SDL_WINDOW_EXTERNAL;
+    pub const SDL_WINDOW_MODAL: u64 = cSDL3.SDL_WINDOW_MODAL;
+    pub const SDL_WINDOW_HIGHPIXELDENSITY: u64 = cSDL3.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    pub const SDL_WINDOW_MOUSECAPTURE: u64 = cSDL3.SDL_WINDOW_MOUSE_CAPTURE;
+    pub const SDL_WINDOW_MOUSERELATIVEMODE: u64 = cSDL3.SDL_WINDOW_MOUSE_RELATIVE_MODE;
+    pub const SDL_WINDOW_ALWAYSONTOP: u64 = cSDL3.SDL_WINDOW_ALWAYS_ON_TOP;
+    pub const SDL_WINDOW_UTILITY: u64 = cSDL3.SDL_WINDOW_UTILITY;
+    pub const SDL_WINDOW_TOOLTIP: u64 = cSDL3.SDL_WINDOW_TOOLTIP;
+    pub const SDL_WINDOW_POPUPMENU: u64 = cSDL3.SDL_WINDOW_POPUP_MENU;
+    pub const SDL_WINDOW_KEYBOARDGRABBED: u64 = cSDL3.SDL_WINDOW_KEYBOARD_GRABBED;
+    pub const SDL_WINDOW_VULKAN: u64 = cSDL3.SDL_WINDOW_VULKAN;
+    pub const SDL_WINDOW_METAL: u64 = cSDL3.SDL_WINDOW_METAL;
+    pub const SDL_WINDOW_TRANSPARENT: u64 = cSDL3.SDL_WINDOW_TRANSPARENT;
+    pub const SDL_WINDOW_NOTFOCUSABLE: u64 = cSDL3.SDL_WINDOW_NOT_FOCUSABLE;
+};
+
+pub const WindowFlags = struct {
+    Fullscreen: bool = false,
+    OpenGL: bool = false,
+    Occluded: bool = false,
+    Hidden: bool = false,
+    Borderless: bool = false,
+    Resizable: bool = false,
+    Minimized: bool = false,
+    Maximized: bool = false,
+    MouseGrabbed: bool = false,
+    InputFocus: bool = false,
+    MouseFocus: bool = false,
+    External: bool = false,
+    Modal: bool = false,
+    HighPixelDensity: bool = false,
+    MouseCapture: bool = false,
+    MouseRelativeMode: bool = false,
+    AlwaysOnTop: bool = false,
+    Utility: bool = false,
+    Tooltip: bool = false,
+    PopupMenu: bool = false,
+    KeyboardGrabbed: bool = false,
+    Vulkan: bool = false,
+    Metal: bool = false,
+    Transparent: bool = false,
+    NotFocusable: bool = false,
+
+    pub fn toSDLFlags(self: WindowFlags) u64 {
+        var bits: u64 = 0;
+
+        inline for (@typeInfo(@This()).@"struct".fields) |field| {
+            if (@field(self, field.name)) {
+                const flag = @field(WindowFlagsInternal, "SDL_WINDOW_" ++ upperAll(field.name));
+                bits |= flag;
+            }
+        }
+
+        return bits;
+    }
+};
+
+pub const GPUShaderFormat = struct {
+    Private: bool = false,
+    Metallib: bool = false,
+
+    SPIRV: bool = false,
+    DXBC: bool = false,
+    DXIL: bool = false,
+    MSL: bool = false,
+
+    pub fn toSDLFlags(self: GPUShaderFormat) u32 {
+        var bits: u32 = 0;
+
+        inline for (@typeInfo(@This()).@"struct".fields) |field| {
+            if (@field(self, field.name)) {
+                const flag = @field(cSDL3, "SDL_GPU_SHADERFORMAT_" ++ upperAll(field.name));
+                bits |= flag;
+            }
+        }
+
+        return bits;
+    }
 };
 
 // Inline functions
 
-// It is a better practice to not do simultaneous init.
 pub inline fn Init(initflags: InitFlags) bool {
-    return cSDL3.SDL_Init(@intFromEnum(initflags));
+    return cSDL3.SDL_Init(initflags.toSDLFlags());
 }
 
-pub inline fn CreateWindow(title: []const u8, w: u32, h: u32, flags: u64) ?*Window {
-    return cSDL3.SDL_CreateWindow(@ptrCast(title), w, h, flags);
+pub inline fn CreateWindow(title: []const u8, w: u32, h: u32, flags: WindowFlags) ?*Window {
+    return cSDL3.SDL_CreateWindow(@ptrCast(title), w, h, flags.toSDLFlags());
+}
+
+pub inline fn CreateGPUDevice(format: GPUShaderFormat, debug_mode: bool, name: ?[]const u8) ?*GPUDevice {
+    return cSDL3.SDL_CreateGPUDevice(format.toSDLFlags(), debug_mode, @ptrCast(name));
+}
+
+pub inline fn AcquireGPUSwapchainTexture(cmdbuf: *GPUCommandBuffer, window: *Window, texture: *?*GPUTexture, sc_texture_width: ?*u32, sc_texture_height: ?*u32) bool {
+    return cSDL3.SDL_AcquireGPUSwapchainTexture(cmdbuf, window, texture, sc_texture_width, sc_texture_height);
 }
